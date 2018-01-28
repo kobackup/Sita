@@ -45,7 +45,7 @@ public class Init {
 		initAirlineSet();
 		initDaySchedules();
 		
-		schedules[6].printTimesForCode("LI");
+		schedules[6].printTimesForCode("AA");
 	}
 	
 	
