@@ -161,6 +161,7 @@ public class SitaGUI extends JFrame implements ActionListener{
 		if(e.getSource() == runButton)
 		{
 			parser = new Init(chosenDataFile, chosenScheduleFile);
+			System.exit(0);
 		}
 	}
 

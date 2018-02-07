@@ -1,6 +1,7 @@
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -25,6 +26,7 @@ public class Init {
 	private String scheduleFilepath; // filepath of the flight schedule
 	private int lastRow; // the last row that contains schedule info
 	private String report; // the resulting billing report
+	private String outputFilename = "Report.txt";
 	
 	private DaySchedule[] schedules; // array of daily schedules based on the schedule file
 	
@@ -47,7 +49,7 @@ public class Init {
 		initAirlineSet();
 		initDaySchedules();
 		
-		schedules[6].printTimesForCode("LI");
+		//schedules[6].printTimesForCode("LI");
 		
 		processCharges();
 	}
@@ -194,12 +196,16 @@ public class Init {
 		
 	}
 	
+	
+	
 	/**
 	 * takes the workstation name as input and 
 	 * returns the corresponding counter name.
 	 * @param workstation
 	 * @return counter name
 	 */
+	
+	/*
 	private String convertCounterName(String workstation) // move this to DaySchedule
 	{
 		switch(workstation)
@@ -243,15 +249,19 @@ public class Init {
 		}
 		
 	}
-	
+	*/
 	
 	
 	private void processCharges()
 	{
 		report = "";
 		StringBuilder builder = new StringBuilder(report);
+		builder.append(String.format("%-14s" + "%-22s" + "%-10s" + "%-10s" + "%-10s" + "%-6s" + "%-10s", 
+				"DATE",  "COUNTER", "AIRLINE", "START", "END", "HOURS", "CHARGE"));
+		builder.append("\r\n\r\n");
 		for(String code : airlineSet)
 		{
+			int airlineTotal = 0;
 			try
 			{
 				FileReader reader = new FileReader(dataFilepath);
@@ -264,10 +274,29 @@ public class Init {
 					String[] tempArray = line.split(",");
 					if(tempArray[1].equals(code)) 
 					{
-						//DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
-						//LocalDateTime dateTime = LocalDateTime.parse(tempArray[2], formatter);
-						//int dayOfWeek = dateTime.getDayOfWeek().ordinal();
-						//schedules[dayOfWeek].processRow(code, tempArray);
+						DateTimeFormatter formatter = DateTimeFormatter.ofPattern("M/d/yyyy H:mm");
+						LocalDateTime dateTime = LocalDateTime.parse(tempArray[2], formatter);
+						int dayOfWeek = dateTime.getDayOfWeek().ordinal();
+						String[] chargedItems = schedules[dayOfWeek].processRow(tempArray);
+						
+						if(chargedItems != null && Integer.parseInt(chargedItems[5]) > 0)
+						{
+							airlineTotal += Integer.parseInt(chargedItems[5]);
+							
+							// add to report string builder
+							
+							//builder.append(dateTime.toLocalDate() + "   ");
+//							for(String word: chargedItems)
+//							{
+//								builder.append(word + "   ");
+//							}
+							
+							builder.append(String.format("%-14s" + "%-22s" + "%-10s" + "%-10s" + "%-10s" + "%-6s" + "%-10s",
+									dateTime.toLocalDate().toString(), chargedItems[0], chargedItems[1], chargedItems[2], 
+									chargedItems[3], chargedItems[4], chargedItems[5]));
+							
+							builder.append("\r\n\r\n");
+						}
 						
 //						for(String cell : tempArray)
 //						{
@@ -275,6 +304,7 @@ public class Init {
 //						}
 //						System.out.println();
 						
+						/*
 						String workstation = tempArray[0];
 						String counter = convertCounterName(workstation);
 						DateTimeFormatter formatter = DateTimeFormatter.ofPattern("M/d/yyyy H:mm");
@@ -282,6 +312,7 @@ public class Init {
 						int dayOfWeek = dateTime.getDayOfWeek().ordinal();
 						LocalTime loginTime = dateTime.toLocalTime();
 						LocalTime logoffTime = loginTime.plusMinutes(Integer.parseInt(tempArray[3]));
+						*/
 					}					
 					
 				} 
@@ -293,7 +324,21 @@ public class Init {
 			{
 				e.printStackTrace();
 			} 
-		}		
+			
+			builder.append("TOTAL CHARGE FOR " + code + ": " + "$" + airlineTotal + "\r\n\r\n\r\n");
+		}
+		report = builder.toString();
+		
+		try
+		{
+			FileWriter writer = new FileWriter(outputFilename);
+			writer.write(report);
+			writer.close();
+		}
+		catch(IOException e)
+		{
+			e.printStackTrace();
+		}
 		
 	}
 

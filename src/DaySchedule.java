@@ -22,8 +22,10 @@ public class DaySchedule {
 	
 	public void add(String k, LocalTime v)
 	{
+		
 		int bucketIndex = hash(k);
 		
+		/*
 		if(buckets[bucketIndex] != null)
 		{
 			Node ins = new Node(k, v);
@@ -35,6 +37,33 @@ public class DaySchedule {
 		{
 			buckets[bucketIndex] = new Node(k, v);
 		}
+		*/
+		
+		Node curr = buckets[bucketIndex];
+		
+		if(curr != null)
+		{
+			try
+			{
+				while(curr.getNext() != null)
+				{
+					curr = curr.getNext();
+				}
+				
+				curr.setNext(new Node(k, v)); 
+				curr.getNext().setPrevious(curr);
+			}
+			catch(NullPointerException e)
+			{
+				// do nothing
+			}
+		}
+		else
+		{
+			buckets[bucketIndex] = new Node(k, v);
+		}	
+		
+		
 
 	}	
 	
@@ -85,15 +114,17 @@ public class DaySchedule {
 	
 	
 	
-	public String processRow(String[] line) //maybe return a string[] so the charge can easily be accessed to be totaled
+	public String[] processRow(String[] line) //maybe return a string[] so the charge can easily be accessed to be totaled
 	{
 		String workstation = line[0];
 		String code = line[1];
-		//String counter = convertCounterName(workstation);
-		DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
+		String counter = convertCounterName(workstation);
+		DateTimeFormatter formatter = DateTimeFormatter.ofPattern("M/d/yyyy H:mm");
 		LocalDateTime dateTime = LocalDateTime.parse(line[2], formatter);		
 		LocalTime loginTime = dateTime.toLocalTime();
 		LocalTime logoffTime = loginTime.plusMinutes(Integer.parseInt(line[3]));
+		
+		String[] result = new String[6];
 		
 		//the time span in minutes during which an airline can be 
 		//logged in to check passengers in without being charged a fee
@@ -107,6 +138,8 @@ public class DaySchedule {
 		default: break;
 		}
 		
+		// tally of the number of chargeable minutes
+		int rowTotal = 0;
 		
 		if(hasAirlineCode(code))
 		{
@@ -114,7 +147,7 @@ public class DaySchedule {
 			
 			Node curr = buckets[bucketIndex];
 			
-			int rowTotal = 0;
+			//int rowTotal = 0;
 			
 			int charge;
 			
@@ -148,9 +181,11 @@ public class DaySchedule {
 									
 									if(curr.previous != null)
 									{
-										if(loginTime.compareTo(curr.previous.getTime().plusMinutes(GRACEPERIOD)) < 0) // replace with rowTotal != 0?
+										//if(loginTime.compareTo(curr.previous.getTime().plusMinutes(GRACEPERIOD)) < 0)
+										if(rowTotal != 0 || (curr.previous.getTime().plusMinutes(GRACEPERIOD).until(curr.getTime(), ChronoUnit.MINUTES) <= timeAllowed))
 										{
-											effectiveLoginTime = curr.previous.getTime().plusMinutes(GRACEPERIOD); //effectiveLoginTime = curr.getTime().minusMinutes(timeAllowed+GRACEPERIOD)?
+											//effectiveLoginTime = curr.previous.getTime().plusMinutes(GRACEPERIOD); 
+											effectiveLoginTime = curr.getTime().minusMinutes(timeAllowed+GRACEPERIOD);
 										}									
 									}
 									
@@ -167,21 +202,28 @@ public class DaySchedule {
 									 * current node because this should have been charged in the previous node.
 									 * The last node (where next is null) should maybe check against midnight.
 									 */
+									System.out.println("Effective Login time: " + effectiveLoginTime);
+									System.out.println("rowTotal early calculation: " + (int)effectiveLoginTime.until(curr.getTime().minusMinutes(timeAllowed+GRACEPERIOD), ChronoUnit.MINUTES));
+									System.out.println("Effective logoff time: " + effectiveLogoffTime);
+									System.out.println("rowTotal late calculation: " + Math.max((int)curr.getTime().plusMinutes(GRACEPERIOD).until(effectiveLogoffTime, ChronoUnit.MINUTES), 0));
 									rowTotal += (int)effectiveLoginTime.until(curr.getTime().minusMinutes(timeAllowed+GRACEPERIOD), ChronoUnit.MINUTES);
-									rowTotal += (int)curr.getTime().plusMinutes(GRACEPERIOD).until(effectiveLogoffTime, ChronoUnit.MINUTES);
+									rowTotal += Math.max((int)curr.getTime().plusMinutes(GRACEPERIOD).until(effectiveLogoffTime, ChronoUnit.MINUTES), 0);
+									
 								}
 								
 								
 								
-								else if(loggedInEarly(loginTime, curr.getTime(), timeAllowed))
+								else if(loggedInEarly(loginTime, curr.getTime(), timeAllowed) && !(loggedOutLate(logoffTime, curr.getTime(), timeAllowed)))
 								{
 									LocalTime effectiveLoginTime = loginTime;
 									
 									if(curr.previous != null)
 									{
-										if(loginTime.compareTo(curr.previous.getTime().plusMinutes(GRACEPERIOD)) < 0) // replace with rowTotal != 0?
+										//if(loginTime.compareTo(curr.previous.getTime().plusMinutes(GRACEPERIOD)) < 0) 
+										if(rowTotal != 0  || (curr.previous.getTime().plusMinutes(GRACEPERIOD).until(curr.getTime(), ChronoUnit.MINUTES) <= timeAllowed))
 										{
-											effectiveLoginTime = curr.previous.getTime().plusMinutes(GRACEPERIOD); //effectiveLoginTime = curr.getTime().minusMinutes(timeAllowed+GRACEPERIOD)?
+											//effectiveLoginTime = curr.previous.getTime().plusMinutes(GRACEPERIOD); 
+											effectiveLoginTime = curr.getTime().minusMinutes(timeAllowed+GRACEPERIOD);
 										}									
 									}
 									rowTotal += (int)effectiveLoginTime.until(curr.getTime().minusMinutes(timeAllowed+GRACEPERIOD), ChronoUnit.MINUTES);
@@ -190,7 +232,7 @@ public class DaySchedule {
 								
 								
 								
-								else if(loggedOutLate(logoffTime, curr.getTime(), timeAllowed))
+								else if(loggedOutLate(logoffTime, curr.getTime(), timeAllowed) && !(loggedInEarly(loginTime, curr.getTime(), timeAllowed)))
 								{
 									LocalTime effectiveLogoffTime = logoffTime;
 									
@@ -201,19 +243,52 @@ public class DaySchedule {
 											effectiveLogoffTime = curr.next.getTime().minusMinutes(timeAllowed + GRACEPERIOD);
 										}
 									}
-									rowTotal += (int)curr.getTime().plusMinutes(GRACEPERIOD).until(effectiveLogoffTime, ChronoUnit.MINUTES);
+									rowTotal += Math.max((int)curr.getTime().plusMinutes(GRACEPERIOD).until(effectiveLogoffTime, ChronoUnit.MINUTES), 0);
 								}
 							}						
 						}
 					}
 					curr = curr.getNext();
 				}
-				charge = ((rowTotal/60)+1)*HOURLYCHARGE;
+				
+				int chargeableHours = 0;
+				if(rowTotal != 0)
+				{
+					chargeableHours = (rowTotal/60)+1;
+				}
+				 
+				charge = chargeableHours*HOURLYCHARGE;
+				result[0] = counter;
+				result[1] = code;
+				result[2] = loginTime.toString();
+				result[3] = logoffTime.toString();
+				result[4] = Integer.toString(chargeableHours);
+				result[5] = Integer.toString(charge);
+				
+				for(String word : result)
+				{
+					System.out.print(word + "  ");
+				}
+				System.out.println();
+				System.out.println(rowTotal);
+				System.out.println();
+				
+				return result;
+				
 				// create string array and return it
 			}
 			else //logged-in time does not intersect with any valid period
 			{
-				charge = ((int)(loginTime.until(logoffTime, ChronoUnit.MINUTES))/60 +1)*HOURLYCHARGE;
+				int chargeableHours = ((int)(loginTime.until(logoffTime, ChronoUnit.MINUTES))/60 +1);
+				charge = chargeableHours*HOURLYCHARGE;
+				result[0] = counter;
+				result[1] = code;
+				result[2] = loginTime.toString();
+				result[3] = logoffTime.toString();
+				result[4] = Integer.toString(chargeableHours);
+				result[5] = Integer.toString(charge);
+				
+				return result;
 				// create string array and return it
 			}
 			
@@ -221,11 +296,65 @@ public class DaySchedule {
 		}
 		else
 		{
-			System.out.println("There are no records with that code");
+			System.out.println("There are no records with the code " + code);
+			return null;
 		}
 				
-		return "";
+		//return result;
 	}
+	
+	
+	
+	/**
+	 * takes the workstation name as input and 
+	 * returns the corresponding counter name.
+	 * @param workstation
+	 * @return counter name
+	 */
+	private String convertCounterName(String workstation) 
+	{
+		switch(workstation)
+		{
+		case "GND1CKB001": case "GND1CKR002":
+			return "Counter 1";
+		case "GND1CKB003": case "GND1CKR004":
+			return "Counter 2";
+		case "GND1CKB005": case "GND1CKR006":
+			return "Counter 3";
+		case "GND1CKB007": case "GND1CKR008":
+			return "Counter 4";
+		case "GND1CKB013": case "GND1CKR014":
+			return "Counter 7";
+		case "GND1CKB017": case "GND1CKR018":
+			return "Counter 9";
+		case "GND1CKB023": case "GND1CKR024":
+			return "Counter 12";
+		case "GND1CKR010":
+			return "Counter 5";
+		case "GND1CKR012":
+			return "Counter 6";
+		case "GND1CKR016":
+			return "Counter 8";
+		case "GND1CKR020":
+			return "Counter 10";
+		case "GND1CKR022":
+			return "Counter 11";
+		case "GND1CKR026":
+			return "Counter 13";
+		case "GND1GTG001":
+			return "Gate 1";
+		case "GND1GTG002":
+			return "Gate 2";
+		case "GND1GTG003":
+			return "Gate 3";
+		case "GND1GTG004":
+			return "Gate 4";
+		default:
+			return "Invalid workstation";
+		}
+		
+	}
+	
 	
 	
 	public boolean isOverlappingAny(Node node, LocalTime login, LocalTime logoff, int timeAllowed, String code)
