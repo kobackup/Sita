@@ -30,15 +30,6 @@ public class Init {
 	
 	private DaySchedule[] schedules; // array of daily schedules based on the schedule file
 	
-	/*
-	private DaySchedule monday;
-	private DaySchedule tuesday;
-	private DaySchedule wednesday;
-	private DaySchedule thursday;
-	private DaySchedule friday;
-	private DaySchedule saturday;
-	private DaySchedule sunday;
-	*/
 	
 	public Init(String data, String schedule)
 	{
@@ -196,61 +187,7 @@ public class Init {
 		
 	}
 	
-	
-	
-	/**
-	 * takes the workstation name as input and 
-	 * returns the corresponding counter name.
-	 * @param workstation
-	 * @return counter name
-	 */
-	
-	/*
-	private String convertCounterName(String workstation) // move this to DaySchedule
-	{
-		switch(workstation)
-		{
-		case "GND1CKB001": case "GND1CKR002":
-			return "Counter 1";
-		case "GND1CKB003": case "GND1CKR004":
-			return "Counter 2";
-		case "GND1CKB005": case "GND1CKR006":
-			return "Counter 3";
-		case "GND1CKB007": case "GND1CKR008":
-			return "Counter 4";
-		case "GND1CKB013": case "GND1CKR014":
-			return "Counter 7";
-		case "GND1CKB017": case "GND1CKR018":
-			return "Counter 9";
-		case "GND1CKB023": case "GND1CKR024":
-			return "Counter 12";
-		case "GND1CKR010":
-			return "Counter 5";
-		case "GND1CKR012":
-			return "Counter 6";
-		case "GND1CKR016":
-			return "Counter 8";
-		case "GND1CKR020":
-			return "Counter 10";
-		case "GND1CKR022":
-			return "Counter 11";
-		case "GND1CKR026":
-			return "Counter 13";
-		case "GND1GTG001":
-			return "Gate 1";
-		case "GND1GTG002":
-			return "Gate 2";
-		case "GND1GTG003":
-			return "Gate 3";
-		case "GND1GTG004":
-			return "Gate 4";
-		default:
-			return "Invalid workstation";
-		}
-		
-	}
-	*/
-	
+
 	
 	private void processCharges()
 	{
@@ -283,38 +220,13 @@ public class Init {
 						{
 							airlineTotal += Integer.parseInt(chargedItems[5]);
 							
-							// add to report string builder
-							
-							//builder.append(dateTime.toLocalDate() + "   ");
-//							for(String word: chargedItems)
-//							{
-//								builder.append(word + "   ");
-//							}
-							
 							builder.append(String.format("%-14s" + "%-22s" + "%-10s" + "%-10s" + "%-10s" + "%-6s" + "%-10s",
 									dateTime.toLocalDate().toString(), chargedItems[0], chargedItems[1], chargedItems[2], 
 									chargedItems[3], chargedItems[4], chargedItems[5]));
 							
 							builder.append("\r\n\r\n");
 						}
-						
-//						for(String cell : tempArray)
-//						{
-//							System.out.print(cell + "     ");
-//						}
-//						System.out.println();
-						
-						/*
-						String workstation = tempArray[0];
-						String counter = convertCounterName(workstation);
-						DateTimeFormatter formatter = DateTimeFormatter.ofPattern("M/d/yyyy H:mm");
-						LocalDateTime dateTime = LocalDateTime.parse(tempArray[2], formatter);
-						int dayOfWeek = dateTime.getDayOfWeek().ordinal();
-						LocalTime loginTime = dateTime.toLocalTime();
-						LocalTime logoffTime = loginTime.plusMinutes(Integer.parseInt(tempArray[3]));
-						*/
-					}					
-					
+					}		
 				} 
 				
 				scanner.close();
