@@ -1,3 +1,8 @@
+/**
+ * This class sets up the GUI for the SITA
+ * check-in counter billing application
+ */
+
 import java.awt.BorderLayout;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
@@ -28,52 +33,41 @@ public class SitaGUI extends JFrame implements ActionListener{
 		setTitle("Select Files");
 		setLocation(200,200);
 		setSize(600, 170);
-		setLocationRelativeTo(null);
-		
-		
-		layoutPanels();
-		
+		setLocationRelativeTo(null);		
+		layoutPanels();	
 	}
 	
+	/**
+	 * Layout the main GUI
+	 */
 	private void layoutPanels()
 	{
-		JPanel top = new JPanel(new GridLayout(2, 1, 10, 10)); 
-		//JPanel top = new JPanel(new GridLayout(2, 3, 10, 10)); 
-		//GridLayout layout = new GridLayout(3,3);
-		//setLayout(layout);
+		layoutTop();	
+		layoutBottom();		
+	}
+
+
+	/**
+	 * Layout the top two thirds of the main GUI
+	 */
+	private void layoutTop()
+	{
+		JPanel top = new JPanel(new GridLayout(2, 1, 10, 10)); 		
 		
+		JPanel innerTop = new JPanel(new BorderLayout()); 
+		top.add(innerTop);
 		JLabel dataLabel = new JLabel("Choose data file             ");
 		dataTextField = new JTextField(35);
 		dataTextField.setPreferredSize(new Dimension(20, 20));
 		chooseDataButton = new JButton("...");
-		chooseDataButton.addActionListener(this);
-//		JPanel buttonPanel1 = new JPanel();
-//		buttonPanel1.add(chooseDataButton);
-//		top.add(dataLabel);
-//		top.add(dataTextField);
-//		top.add(buttonPanel1);
-		
-//		JLabel scheduleLabel = new JLabel("Choose schedule file");
-//		scheduleTextField = new JTextField(35);
-//		chooseScheduleButton = new JButton("...");
-//		chooseScheduleButton.addActionListener(this);
-//		JPanel buttonPanel2 = new JPanel();
-//		buttonPanel2.add(chooseScheduleButton);
-//		top.add(scheduleLabel);
-//		top.add(scheduleTextField);
-//		top.add(buttonPanel2);
-		
-		
-		JPanel innerTop = new JPanel(new BorderLayout()); innerTop.setPreferredSize(new Dimension(500, 35));
-		top.add(innerTop);
+		chooseDataButton.addActionListener(this);	
 		innerTop.add(dataLabel, BorderLayout.WEST);
 		innerTop.add(dataTextField);
 		JPanel buttonPanel1 = new JPanel();
 		buttonPanel1.add(chooseDataButton);
-		innerTop.add(buttonPanel1, BorderLayout.EAST);	
+		innerTop.add(buttonPanel1, BorderLayout.EAST);			
 		
-		
-		JPanel innerBottom = new JPanel(new BorderLayout()); innerBottom.setPreferredSize(new Dimension(500, 35));
+		JPanel innerBottom = new JPanel(new BorderLayout()); 
 		top.add(innerBottom);
 		JLabel scheduleLabel = new JLabel("Choose schedule file    ");
 		scheduleTextField = new JTextField(35);
@@ -84,38 +78,17 @@ public class SitaGUI extends JFrame implements ActionListener{
 		buttonPanel2.add(chooseScheduleButton);
 		innerBottom.add(scheduleLabel, BorderLayout.WEST);
 		innerBottom.add(scheduleTextField);
-		innerBottom.add(buttonPanel2, BorderLayout.EAST); 
-		
+		innerBottom.add(buttonPanel2, BorderLayout.EAST); 		
 		
 		add(top, BorderLayout.NORTH);
-		
-		
-		//JPanel middle = new JPanel
-		
-		
-		/*
-		JPanel top = new JPanel();
-		JLabel dataLabel = new JLabel("Choose data file");
-		dataTextField = new JTextField(35);
-		chooseDataButton = new JButton("...");
-		chooseDataButton.addActionListener(this);
-		top.add(dataLabel);
-		top.add(dataTextField);
-		top.add(chooseDataButton);
-		add(top, BorderLayout.NORTH);
-		
-		JPanel middle = new JPanel();
-		JLabel scheduleLabel = new JLabel("Choose schedule file");
-		scheduleTextField = new JTextField(35);
-		chooseScheduleButton = new JButton("...");
-		chooseScheduleButton.addActionListener(this);
-		middle.add(scheduleLabel);
-		middle.add(scheduleTextField);
-		middle.add(chooseScheduleButton);
-		add(middle, BorderLayout.CENTER);
-		*/
-		
-		
+	}
+
+
+	/**
+	 * Layout the bottom section of the main GUI
+	 */
+	private void layoutBottom()
+	{
 		JPanel bottom = new JPanel();
 		runButton = new JButton("Run");
 		runButton.addActionListener(this);
@@ -123,6 +96,41 @@ public class SitaGUI extends JFrame implements ActionListener{
 		add(bottom, BorderLayout.SOUTH);
 	}
 	
+	/**
+	 * Launches the file chooser window that allows the user
+	 * to select the required data and schedule files.
+	 * Overloaded method that takes two file extension arguments. 
+	 */
+	private String launchFileChooser(String type, String extension1, String extension2)
+	{
+		JFileChooser chooser = new JFileChooser();
+		String fileType = type;
+		String fileExtension1 = extension1;
+		String fileExtension2 = extension2;
+	    FileNameExtensionFilter filter = new FileNameExtensionFilter(type, extension1, extension2);
+	    chooser.setFileFilter(filter);	     
+	    chooser.showOpenDialog(SitaGUI.this);
+	    
+	    String path = "";
+	    
+	    try
+	    {
+	    	path = chooser.getSelectedFile().getCanonicalPath();
+	    }
+	    catch(IOException e)
+	    {
+	    	e.printStackTrace();
+	    }
+	    
+	    return path;
+	}
+	
+	
+	/**
+	 * Launches the file chooser window that allows the user
+	 * to select the required data and schedule files.
+	 * Overloaded method that takes one file extension argument. 
+	 */
 	private String launchFileChooser(String type, String extension)
 	{
 		JFileChooser chooser = new JFileChooser();
@@ -147,13 +155,16 @@ public class SitaGUI extends JFrame implements ActionListener{
 	}
 	
 	
-	
+	/**
+	 * handles all click events
+	 */
 	public void actionPerformed(ActionEvent e)
 	{
 		if(e.getSource() == chooseDataButton)
 		{			
 			try
 			{
+				//display only CSV files and replace the back slashes from Windows file system
 				chosenDataFile = launchFileChooser("CSV", "csv").replaceAll("\\\\", "/");
 			}
 			catch(NullPointerException n)
@@ -171,7 +182,9 @@ public class SitaGUI extends JFrame implements ActionListener{
 		{
 			try
 			{
-				chosenScheduleFile = launchFileChooser("Excel", "xlsx").replaceAll("\\\\", "/");
+				//display only CSV files and replace the back slashes from Windows file system				
+				chosenScheduleFile = launchFileChooser("CSV", "csv").replaceAll("\\\\", "/");
+				//chosenScheduleFile = launchFileChooser("Excel", "xlsx", "xls").replaceAll("\\\\", "/");
 			}
 			catch(NullPointerException n)
 			{
